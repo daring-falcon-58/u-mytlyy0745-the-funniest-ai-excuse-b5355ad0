@@ -17,6 +17,12 @@ import os
 
 ENTRY = "I got distracted by a CAPTCHA asking me to prove I'm not a robot. I failed."
 
+# The competition gate is 1-200 characters. Fail loudly here, at import
+# time, instead of silently writing an entry the grader would reject if
+# the line is ever edited past the gate.
+if not 1 <= len(ENTRY) <= 200:
+    raise ValueError(f"entry is {len(ENTRY)} chars, outside the 1-200 gate")
+
 
 def main() -> None:
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output"
@@ -24,6 +30,11 @@ def main() -> None:
     path = os.path.join(out_dir, "entry.txt")
     with open(path, "w", encoding="utf-8", newline="") as f:
         f.write(ENTRY)
+    # Verify the write: read the file back and compare bytes, so a
+    # partial write or encoding surprise fails loudly instead of
+    # submitting a corrupted entry.
+    if open(path, "rb").read() != ENTRY.encode("utf-8"):
+        raise OSError(f"entry.txt at {path} does not match the entry")
 
 
 if __name__ == "__main__":
